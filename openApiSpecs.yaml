@@ -1,0 +1,121 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: https://cigrtc-uw-air-traffic-control-as-p.azurewebsites.net
+    description: prod
+  - url: https://cigrtc-uw-air-traffic-control-as-q.azurewebsites.net
+    description: qa
+  - url: https://cigrtc-uw-air-traffic-control-as-r.azurewebsites.net
+    description: pre-prod
+  - url: https://cigrtc-uw-air-traffic-control-as-d.azurewebsites.net
+    description: dev
+paths:
+  /api/v1/marketability:
+    post:
+      security:
+        - oauth2:
+          - 'service:role'
+        - mgm-roles:
+            - service
+        - service-role:
+            - read
+      tags:
+      - atc-controller
+      operationId: getCustomerMarketability
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtcMarketabilityRequest'
+        required: true
+      responses:
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AtcMarketabilityResponse'
+  /health:
+    get:
+      tags:
+      - health-check-controller
+      operationId: ping
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: This API requires IDMS jwt token
+      flows:
+        clientCredentials:
+          tokenUrl: https://azdeapi-dev.mgmresorts.com/int/identity/authorization/v1/mgmsvc/token
+          scopes:
+            restaurant.recommendation:read: read by guest id
+            another.scope: another description
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        marketable:
+          type: boolean
+        errorMessage:
+          type: string
+    AtcMarketabilityRequest:
+      required:
+      - channel
+      - correlationId
+      - customerIdentifier
+      - propertyShortCode
+      - referenceId
+      type: object
+      properties:
+        referenceId:
+          type: string
+        correlationId:
+          type: string
+        customerIdentifier:
+          $ref: '#/components/schemas/CustomerIdentifier'
+        propertyShortCode:
+          type: string
+        channel:
+          type: string
+          enum:
+          - EMAIL
+          - PUSH
+          - SMS
+    CustomerIdentifier:
+      required:
+      - customerIdentifierType
+      - value
+      type: object
+      properties:
+        value:
+          type: string
+        customerIdentifierType:
+          type: string
+          enum:
+          - MGM_ID
+          - MLIFE_NUMBER
+    AtcMarketabilityResponse:
+      type: object
+      properties:
+        referenceId:
+          type: string
+        correlationId:
+          type: string
+        marketable:
+          type: boolean
